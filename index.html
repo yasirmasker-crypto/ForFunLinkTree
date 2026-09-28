@@ -482,4 +482,403 @@ async function lookupBarcode(code) {
   await generateAI(p, code);
 }
 
-function rende
+function renderShell(p) {
+  const name = p.product_name || 'Unknown Product';
+  const brand = p.brands || '';
+  const cat = p.categories ? p.categories.split(',')[0].trim() : '';
+  const wt = p.quantity || p.serving_size || '';
+  document.getElementById('product-name').textContent = name;
+  document.getElementById('product-sub').textContent = [brand,cat,wt].filter(Boolean).join(' · ');
+
+  const badges = [];
+  if (p.nutriscore_grade) badges.push({label:'Nutri-Score '+p.nutriscore_grade.toUpperCase(),cls:p.nutriscore_grade<='b'?'badge-green':'badge-amber'});
+  if (p.ecoscore_grade) badges.push({label:'Eco '+p.ecoscore_grade.toUpperCase(),cls:'badge-blue'});
+  if (p.labels_tags?.includes('en:organic')) badges.push({label:'Organic',cls:'badge-green'});
+  document.getElementById('badge-row').innerHTML = badges.map(b=>`<span class="badge ${b.cls}">${b.label}</span>`).join('');
+
+  const thumb = document.getElementById('product-thumb');
+  if (p.image_front_url || p.image_url) {
+    thumb.innerHTML = `<img src="${p.image_front_url || p.image_url}" onerror="this.style.display='none'"/>`;
+  }
+
+  document.getElementById('right').classList.add('active');
+  document.getElementById('product-card').classList.add('active');
+
+  document.getElementById('tags-row').innerHTML = `<div class="skeleton" style="width:70px;height:26px;border-radius:20px;display:inline-block;"></div><div class="skeleton" style="width:90px;height:26px;border-radius:20px;display:inline-block;margin-left:7px;"></div>`;
+  document.getElementById('blurb-card').innerHTML = `<div class="skeleton"></div><div class="skeleton" style="width:80%"></div><div class="skeleton" style="width:60%"></div>`;
+}
+
+async function generateAI(p, code) {
+  const name = p.product_name || 'Unknown product';
+  const brand = p.brands || '';
+  const category = p.categories || '';
+  const ingredients = p.ingredients_text ? p.ingredients_text.substring(0,300) : '';
+  const nutri = p.nutriments ? JSON.stringify({
+    energy_kcal: p.nutriments['energy-kcal_100g'],
+    protein: p.nutriments['proteins_100g'],
+    fat: p.nutriments['fat_100g'],
+    carbs: p.nutriments['carbohydrates_100g'],
+    sugar: p.nutriments['sugars_100g'],
+    fiber: p.nutriments['fiber_100g'],
+    salt: p.nutriments['salt_100g']
+  }) : '';
+
+  const prompt = `You are the AI assistant for MediMart supermarket in Zakho, Kurdistan Region, Iraq.
+
+Product:
+- Name: ${name}
+- Brand: ${brand}
+- Category: ${category}
+- Barcode: ${code}
+${ingredients?`- Ingredients: ${ingredients}`:''}
+${nutri?`- Nutrition per 100g: ${nutri}`:''}
+
+Respond ONLY with a valid JSON object (no markdown, no backticks):
+{
+  "tags": [{"label":"tag in English","color":"green|blue|amber|purple|red|teal"}],
+  "insight": "2-3 sentences in Kurdish Badini (Kurmanji, Arabic script) about what this product is and why customers would want it.",
+  "pairings": ["item in Kurdish","item","item","item","item"],
+  "tips": "2-3 tips in Kurdish Badini on how to use, store or serve. Empty string if not applicable.",
+  "did_you_know": "One compelling fact in Kurdish Badini that encourages purchase. Empty string if nothing interesting.",
+  "also_buy": ["product in Kurdish","product","product"]
+}
+
+Tags: be creative, 4-8 tags. Health (Probiotic, Keto-Friendly, High Protein, Omega-3, Vitamin C, Calcium, Antioxidants, Low Sugar, High Fiber, Vegan, Gluten-Free, Organic), allergens (amber/red), lifestyle (purple/teal). All insight/pairings/tips/did_you_know/also_buy must be in Kurdish Badini Arabic script.`;
+
+  try {
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=" + encodeURIComponent(apiKey);
+    const res = await fetch(url, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        contents:[{parts:[{text:prompt}]}],
+        generationConfig:{maxOutputTokens:4000,temperature:0.7}
+      })
+    });
+    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'API error '+res.status);}
+    const data = await res.json();
+    const raw = data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+    const ai = JSON.parse(raw);
+
+    chatHistory = [{
+      role: 'user',
+      parts: [{ text: `Product context: Name: ${name}, Brand: ${brand}, Category: ${category}${ingredients?', Ingredients: '+ingredients:''}${nutri?', Nutrition: '+nutri:''}. The AI already told the customer: "${ai.insight}". Now answer follow-up questions in Kurdish Badini (Kurmanji, Arabic script). Be concise and helpful.` }]
+    }, {
+      role: 'model',
+      parts: [{ text: 'باشە، ئامادەیم بپرسیارا کوستومەر وەڵام بدەم.' }]
+    }];
+
+    renderBlurb(ai);
+    setStatus('✓ ' + code, 'success');
+    document.getElementById('chat-section').style.display = 'flex';
+    document.getElementById('chat-section').style.flexDirection = 'column';
+    cacheSet(code, { product: p, ai, chatHistory });
+  } catch(e) {
+    console.error(e);
+    setStatus('AI insight failed: ' + e.message, 'error');
+    document.getElementById('blurb-card').innerHTML = `<div style="color:#c0392b;font-size:16px;line-height:1.7;">${e.message}</div>`;
+    document.getElementById('tags-row').innerHTML = '';
+  }
+}
+
+function renderBlurb(ai) {
+  const tagColorMap = {green:'tag-green',blue:'tag-blue',amber:'tag-amber',purple:'tag-purple',red:'tag-red',teal:'tag-teal'};
+  document.getElementById('tags-row').innerHTML = (ai.tags||[]).map(t=>`<span class="tag ${tagColorMap[t.color]||'tag-blue'}">${t.label}</span>`).join('');
+
+  let html = '';
+  if(ai.insight) html += `<div class="section"><div class="section-label">پێزانین</div><div class="section-text">${ai.insight}</div></div><hr class="divider">`;
+  if(ai.pairings?.length) html += `<div class="section"><div class="section-label">یا خوشە دگال</div><div class="chip-list">${ai.pairings.map(p=>`<span class="chip chip-accent">${p}</span>`).join('')}</div></div><hr class="divider">`;
+  if(ai.tips) html += `<div class="section"><div class="section-label">هاریکاری</div><div class="section-text">${ai.tips}</div></div><hr class="divider">`;
+  if(ai.also_buy?.length) html += `<div class="section"><div class="section-label">کەرەستێن وەکی وێ</div><div class="chip-list">${ai.also_buy.map(p=>`<span class="chip">${p}</span>`).join('')}</div></div>`;
+  if(ai.did_you_know) html += `<hr class="divider"><div class="section"><div class="section-label">ئەرێ تە دزانی؟</div><div class="section-text">${ai.did_you_know}</div></div>`;
+
+  document.getElementById('blurb-card').innerHTML = html || '<div style="color:var(--muted);">No information available.</div>';
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg || !chatHistory.length) return;
+
+  input.value = '';
+  document.getElementById('chat-send').disabled = true;
+
+  const messagesEl = document.getElementById('chat-messages');
+  messagesEl.innerHTML += `<div class="chat-bubble user">${msg}</div>`;
+  const thinkingEl = document.createElement('div');
+  thinkingEl.className = 'chat-bubble ai thinking';
+  thinkingEl.textContent = '...';
+  messagesEl.appendChild(thinkingEl);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  chatHistory.push({ role:'user', parts:[{text: msg}] });
+
+  try {
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=" + encodeURIComponent(apiKey);
+    const res = await fetch(url, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ contents: chatHistory, generationConfig:{maxOutputTokens:4000,temperature:0.7} })
+    });
+    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Error');}
+    const data = await res.json();
+    const reply = data.candidates[0].content.parts[0].text.trim();
+    chatHistory.push({ role:'model', parts:[{text:reply}] });
+    thinkingEl.classList.remove('thinking');
+    thinkingEl.textContent = reply;
+  } catch(e) {
+    thinkingEl.classList.remove('thinking');
+    thinkingEl.style.color='#c0392b';
+    thinkingEl.textContent = 'Error: ' + e.message;
+  }
+
+  document.getElementById('chat-send').disabled = false;
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+// ── SCREENSAVER / PROMOTIONS ──
+const SS_TIMEOUT = 2 * 60 * 1000;
+const SS_PAGE_INTERVAL = 6000;
+const ITEMS_PER_PAGE = 4;
+const ADMIN_PASSWORD = 'zbazar2024';
+
+let ssTimer = null;
+let ssPageTimer = null;
+let ssPage = 0;
+
+function resetSsTimer() {
+  clearTimeout(ssTimer);
+  ssTimer = setTimeout(activateScreensaver, SS_TIMEOUT);
+}
+
+document.addEventListener('click', resetSsTimer);
+document.addEventListener('keydown', resetSsTimer);
+document.addEventListener('touchstart', resetSsTimer);
+resetSsTimer();
+
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vScxDI3tbnBgiAyWJnpPRKB7eEeZRgIWKyre5nl300LXAF56ZAbIhe6V4gp8zVJFYqvs5WyK6JK6hQC/pub?gid=0&single=true&output=csv';
+let cachedPromos = [];
+
+function getPromos() {
+  return cachedPromos.length ? cachedPromos : JSON.parse(localStorage.getItem('zbazar_promos') || '[]');
+}
+
+async function fetchSheet() {
+  try {
+    const res = await fetch(SHEET_URL + '&t=' + Date.now());
+    const text = await res.text();
+    const rows = text.trim().split('\n').slice(1);
+    cachedPromos = rows.map(row => {
+      const cols = row.split(',').map(c => c.replace(/^"|"$/g,'').trim());
+      return {
+        name: cols[0] || '',
+        oldPrice: parseFloat(cols[1]) || 0,
+        newPrice: parseFloat(cols[2]) || 0,
+        currency: cols[3] || 'IQD',
+        image: cols[4] || '',
+        active: (cols[5] || '').toUpperCase() === 'YES'
+      };
+    }).filter(p => p.active && p.name && p.newPrice < p.oldPrice);
+    localStorage.setItem('zbazar_promos', JSON.stringify(cachedPromos));
+  } catch(e) {
+    cachedPromos = JSON.parse(localStorage.getItem('zbazar_promos') || '[]');
+  }
+}
+
+fetchSheet();
+setInterval(fetchSheet, 100000);
+
+function openPromotions() {
+  const promos = getPromos();
+  if (!promos.length) {
+    alert('No promotions added yet.');
+    return;
+  }
+  ssPage = 0;
+  renderSsPage(promos);
+  document.getElementById('screensaver').classList.add('active');
+  clearInterval(ssPageTimer);
+  if (promos.length > ITEMS_PER_PAGE) {
+    ssPageTimer = setInterval(() => {
+      const p = getPromos();
+      const totalPages = Math.ceil(p.length / ITEMS_PER_PAGE);
+      ssPage = (ssPage + 1) % totalPages;
+      renderSsPage(p);
+    }, SS_PAGE_INTERVAL);
+  }
+}
+
+function activateScreensaver() {
+  const promos = getPromos();
+  if (!promos.length) return;
+  openPromotions();
+}
+
+function renderSsPage(promos) {
+  const totalPages = Math.ceil(promos.length / ITEMS_PER_PAGE);
+  const start = ssPage * ITEMS_PER_PAGE;
+  const items = promos.slice(start, start + ITEMS_PER_PAGE);
+
+  document.getElementById('ss-grid').innerHTML = items.map(p => {
+    const pct = Math.round((1 - p.newPrice / p.oldPrice) * 100);
+    return `
+      <div class="ss-card" style="display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;">
+        <div style="padding:14px 14px 8px;flex-shrink:0;">
+          <div class="ss-card-name">${p.name}</div>
+        </div>
+        <div style="flex:1;min-height:0;background:rgba(255,255,255,0.04);overflow:hidden;">
+          ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.parentElement.style.background='rgba(255,255,255,0.02)'"/>` : ''}
+        </div>
+        <div class="ss-card-bottom" style="padding:10px 14px 14px;flex-shrink:0;">
+          <div class="ss-card-old">${p.oldPrice} ${p.currency}</div>
+          <div class="ss-card-new">${p.newPrice} ${p.currency}</div>
+          <div class="ss-card-badge">${pct}% OFF</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('ss-pagination').innerHTML = totalPages > 1
+    ? Array.from({length: totalPages}, (_, i) => `<div class="ss-dot ${i===ssPage?'active':''}"></div>`).join('')
+    : '';
+}
+
+function dismissScreensaver() {
+  clearInterval(ssPageTimer);
+  document.getElementById('screensaver').classList.remove('active');
+  resetSsTimer();
+}
+
+// ── ADMIN ──
+function openAdmin() {
+  document.getElementById('admin').classList.add('active');
+  document.getElementById('admin-pw-screen').style.display = 'flex';
+  document.getElementById('admin-main').style.display = 'none';
+  document.getElementById('admin-pw-input').value = '';
+}
+
+function closeAdmin() {
+  document.getElementById('admin').classList.remove('active');
+}
+
+function checkAdminPw() {
+  if (document.getElementById('admin-pw-input').value === ADMIN_PASSWORD) {
+    document.getElementById('admin-pw-screen').style.display = 'none';
+    document.getElementById('admin-main').style.display = 'flex';
+    renderPromoList();
+  } else {
+    alert('Incorrect password.');
+  }
+}
+
+function addPromo() {
+  const name = document.getElementById('promo-name').value.trim();
+  const oldPrice = parseFloat(document.getElementById('promo-old').value);
+  const newPrice = parseFloat(document.getElementById('promo-new').value);
+  const currency = document.getElementById('promo-currency').value.trim() || 'IQD';
+  const image = document.getElementById('promo-image').value.trim() || '';
+  if (!name || isNaN(oldPrice) || isNaN(newPrice) || newPrice >= oldPrice) {
+    alert('Fill all fields. Sale price must be lower than original.');
+    return;
+  }
+  const promos = getPromos();
+  promos.push({ name, oldPrice, newPrice, currency, image, active: true });
+  localStorage.setItem('zbazar_promos', JSON.stringify(promos));
+  document.getElementById('promo-name').value = '';
+  document.getElementById('promo-old').value = '';
+  document.getElementById('promo-new').value = '';
+  document.getElementById('promo-currency').value = '';
+  document.getElementById('promo-image').value = '';
+  renderPromoList();
+}
+
+function deletePromo(idx) {
+  const promos = getPromos();
+  promos.splice(idx, 1);
+  localStorage.setItem('zbazar_promos', JSON.stringify(promos));
+  renderPromoList();
+}
+
+function renderPromoList() {
+  const promos = getPromos();
+  const el = document.getElementById('promo-list');
+  if (!promos.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:14px;padding:8px;">No promotions yet.</div>';
+    return;
+  }
+  el.innerHTML = promos.map((p, i) => `
+    <div class="promo-item">
+      <div class="promo-item-info">
+        <div class="promo-name">${p.name}</div>
+        <div class="promo-price">${p.oldPrice} → ${p.newPrice} ${p.currency} · ${Math.round((1-p.newPrice/p.oldPrice)*100)}% off</div>
+      </div>
+      <button class="promo-delete" onclick="deletePromo(${i})">Remove</button>
+    </div>`).join('');
+}
+
+// ── VOICE INPUT ──
+let recognition = null;
+let isListening = false;
+
+function initVoice() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert('Voice input is not supported on this browser. Please use Chrome.');
+    return null;
+  }
+  const r = new SpeechRecognition();
+  r.lang = 'ar';
+  r.continuous = false;
+  r.interimResults = false;
+  r.maxAlternatives = 1;
+
+  r.onresult = e => {
+    const transcript = e.results[0][0].transcript;
+    document.getElementById('chat-input').value = transcript;
+    stopListening();
+    setTimeout(() => sendChat(), 300);
+  };
+
+  r.onerror = () => stopListening();
+  r.onend = () => stopListening();
+  return r;
+}
+
+function toggleVoice() {
+  if (!chatHistory.length) {
+    alert('Please scan a product first.');
+    return;
+  }
+  isListening ? stopListening() : startListening();
+}
+
+function startListening() {
+  recognition = initVoice();
+  if (!recognition) return;
+  try {
+    recognition.start();
+    isListening = true;
+    const btn = document.getElementById('voice-btn');
+    btn.textContent = '⏹';
+    btn.classList.add('listening');
+    setStatus('Listening... speak in Arabic — استمع...', '');
+  } catch(e) {
+    stopListening();
+  }
+}
+
+function stopListening() {
+  isListening = false;
+  if (recognition) { try { recognition.stop(); } catch(e) {} recognition = null; }
+  const btn = document.getElementById('voice-btn');
+  if (btn) { btn.textContent = '🎤'; btn.classList.remove('listening'); }
+  setStatus('', '');
+}
+
+function setStatus(msg, type) {
+  const el = document.getElementById('status-bar');
+  el.textContent = msg;
+  el.className = 'status-bar' + (type ? ' ' + type : '');
+}
+</script>
+</body>
+</html>
