@@ -1,302 +1,485 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ku" dir="ltr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Future Island</title>
-<meta name="description" content="Future Island — find us everywhere.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>MediMart AI Helper</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg-deep:#0e2c55;
-    --bg-mid:#163b72;
-    --bg-glow:#2c6fd1;
-    --ink:#f5f8ff;
-    --ink-dim:#b9caeb;
-    --card-radius:22px;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f5efe6;
+  --surface:#fdf8f2;
+  --surface2:#ede0ce;
+  --border:rgba(120,70,20,0.13);
+  --border2:rgba(120,70,20,0.28);
+  --accent:#7c4a1e;
+  --accent-pale:#ede0ce;
+  --text:#1e0e00;
+  --muted:#6b4c2a;
+  --muted2:#b89a78;
+  --font-d:'Syne',sans-serif;
+  --font-b:'DM Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font-b);height:100vh;overflow:hidden;background-image:url('background.png');background-size:cover;background-position:center;background-attachment:fixed;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(120,70,20,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(120,70,20,0.04) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;z-index:0;}
 
-    --ig-1:#F58529; --ig-2:#DD2A7B; --ig-3:#8134AF; --ig-4:#515BD4;
-    --snap:#FFFC00; --snap-ink:#1a1a1a;
-    --wa:#25D366;
-    --yt:#FF0033;
-    --fb:#1877F2;
-  }
+/* ── SETUP ── */
+#setup{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+#setup.hidden{display:none;}
+.setup-card{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:36px;display:flex;flex-direction:column;gap:18px;box-shadow:0 6px 40px rgba(120,70,20,0.1);}
+.setup-card h2{font-family:var(--font-d);font-size:22px;font-weight:700;}
+.setup-card p{font-size:15px;color:var(--muted);line-height:1.6;}
+.setup-card a{color:var(--accent);text-decoration:none;font-weight:600;}
+.setup-card label{font-size:13px;color:var(--muted);font-weight:500;}
+.setup-card input{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:13px 16px;color:var(--text);font-size:16px;outline:none;width:100%;font-family:var(--font-b);transition:border-color .2s;}
+.setup-card input:focus{border-color:var(--accent);}
 
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
+/* ── PAGE ── */
+.page{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column;padding:14px 20px 10px;gap:10px;}
 
-  body{
-    min-height:100vh;
-    background:
-      radial-gradient(circle at 15% 8%, var(--bg-glow) 0%, transparent 40%),
-      radial-gradient(circle at 85% 95%, #3a8bd8 0%, transparent 35%),
-      linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-mid) 55%, var(--bg-deep) 100%);
-    background-attachment: fixed;
-    font-family:'Inter', sans-serif;
-    color:var(--ink);
-    display:flex;
-    justify-content:center;
-    padding:48px 18px 24px;
-    position:relative;
-    overflow-x:hidden;
-  }
+/* ── HEADER ── */
+.top-bar{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-mark{width:46px;height:46px;background:var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(120,70,20,0.3);flex-shrink:0;}
+.logo-name{font-family:var(--font-d);font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--accent);line-height:1;}
+.logo-name span{color:var(--text);}
+.logo-ku{font-size:13px;color:var(--muted);direction:rtl;}
+.store-badge{background:var(--accent);color:#fff;font-family:var(--font-d);font-size:14px;font-weight:700;padding:6px 16px;border-radius:20px;}
+.top-right{display:flex;align-items:center;gap:10px;}
+.key-btn{background:transparent;border:1px solid var(--border2);border-radius:8px;padding:6px 12px;color:var(--muted);font-size:13px;cursor:pointer;font-family:var(--font-b);transition:all .2s;}
+.key-btn:hover{border-color:var(--accent);color:var(--accent);}
 
-  /* ambient floating stars */
-  .stars{
-    position:fixed;
-    inset:0;
-    pointer-events:none;
-    z-index:0;
-  }
-  .stars span{
-    position:absolute;
-    background:#fff;
-    border-radius:50%;
-    opacity:.55;
-    animation: twinkle 3.5s ease-in-out infinite;
-  }
-  @keyframes twinkle{
-    0%,100%{opacity:.15; transform:scale(0.8);}
-    50%{opacity:.8; transform:scale(1.15);}
-  }
+/* ── MAIN ── */
+.main{flex:1;display:grid;grid-template-columns:280px 1fr;gap:14px;min-height:0;}
 
-  .page{
-    position:relative;
-    z-index:1;
-    width:100%;
-    max-width:440px;
-  }
+/* ── LEFT ── */
+.left{display:flex;flex-direction:column;gap:10px;min-height:0;}
 
-  header{
-    text-align:center;
-    margin-bottom:34px;
-  }
+.scan-zone{background:var(--surface);border:2px solid var(--border2);border-radius:18px;overflow:hidden;transition:border-color .3s,box-shadow .3s;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:12px;box-shadow:0 2px 14px rgba(120,70,20,0.07);}
+.scan-idle{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;}
+.scan-idle-icon{width:56px;height:56px;background:var(--accent-pale);border-radius:16px;display:flex;align-items:center;justify-content:center;border:2px solid rgba(120,70,20,0.15);animation:breathe 3s ease-in-out infinite;}
+@keyframes breathe{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(124,74,30,0.15)}50%{transform:scale(1.04);box-shadow:0 0 0 10px rgba(124,74,30,0)}}
+.scan-idle h2{font-family:var(--font-d);font-size:20px;font-weight:800;color:var(--accent);}
+.scan-idle p{font-size:13px;color:var(--muted);line-height:1.4;}
 
-  .badge{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    width:76px;
-    height:76px;
-    border-radius:26px;
-    background:linear-gradient(160deg, #3d7fdb, #1e4d92);
-    box-shadow:0 10px 30px -8px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.25);
-    margin-bottom:16px;
-  }
+.manual-wrap{display:flex;width:100%;gap:6px;}
+.manual-wrap input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:9px;padding:9px 12px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s;font-family:var(--font-b);}
+.manual-wrap input:focus{border-color:var(--accent);}
+.btn-go{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 14px;font-family:var(--font-d);font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;}
 
-  h1{
-    font-family:'Fredoka', sans-serif;
-    font-weight:700;
-    font-size:34px;
-    letter-spacing:.5px;
-    margin:0;
-    line-height:1.05;
-    text-transform:lowercase;
-  }
-  h1 span{
-    display:block;
-    background:linear-gradient(90deg,#ffffff, #b9d4ff);
-    -webkit-background-clip:text;
-    background-clip:text;
-    color:transparent;
-  }
+.status-bar{text-align:center;font-size:14px;color:var(--muted);min-height:20px;flex-shrink:0;}
+.status-bar.error{color:#c0392b;}
+.status-bar.success{color:var(--accent);font-weight:600;}
 
-  .tagline{
-    margin-top:10px;
-    font-size:14px;
-    color:var(--ink-dim);
-    letter-spacing:.3px;
-  }
+/* product summary */
+.product-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:14px;display:none;flex-direction:column;gap:8px;box-shadow:0 2px 12px rgba(120,70,20,0.06);flex:1;min-height:0;}
+.product-card.active{display:flex;}
+.product-header{display:flex;gap:10px;align-items:flex-start;}
+.product-thumb{width:58px;height:58px;border-radius:11px;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+.product-thumb img{width:100%;height:100%;object-fit:contain;}
+.product-name{font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--text);line-height:1.2;}
+.product-sub{font-size:13px;color:var(--muted);margin-top:2px;}
+.badge-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:3px;}
+.badge{padding:3px 8px;border-radius:5px;font-size:12px;font-weight:600;border:1px solid;}
+.badge-green{color:#1a7a3c;border-color:rgba(26,122,60,.25);background:rgba(26,122,60,.08);}
+.badge-blue{color:var(--accent);border-color:rgba(124,74,30,.25);background:var(--accent-pale);}
+.badge-amber{color:#b06000;border-color:rgba(176,96,0,.25);background:rgba(176,96,0,.08);}
+.scan-again-btn{background:var(--accent-pale);border:1.5px solid var(--accent);border-radius:9px;padding:9px;color:var(--accent);font-family:var(--font-d);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;flex-shrink:0;}
+.scan-again-btn:hover{background:var(--accent);color:#fff;}
 
-  main{
-    display:flex;
-    flex-direction:column;
-    gap:14px;
-  }
+/* ── RIGHT ── */
+.right{display:none;flex-direction:column;gap:10px;min-height:0;animation:fadeUp .4s ease both;}
+.right.active{display:flex;}
 
-  .link-bar{
-    position:relative;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    text-decoration:none;
-    border-radius:999px;
-    padding:6px 6px 6px 26px;
-    min-height:64px;
-    box-shadow:0 8px 20px -6px rgba(0,0,0,.45);
-    transition:transform .18s ease, box-shadow .18s ease;
-  }
-  .link-bar:hover{
-    transform:translateY(-3px) scale(1.015);
-    box-shadow:0 14px 26px -6px rgba(0,0,0,.55);
-  }
-  .link-bar:active{ transform:translateY(0) scale(.99); }
+/* tags */
+.tags-card{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:12px 16px;display:flex;flex-direction:column;gap:8px;box-shadow:0 2px 10px rgba(120,70,20,0.05);flex-shrink:0;}
+.tags-label{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:700;}
+.tags-row{display:flex;flex-wrap:wrap;gap:7px;}
+.tag{padding:5px 14px;border-radius:20px;font-size:15px;font-weight:600;border:1.5px solid;}
+.tag-green{color:#166534;border-color:rgba(22,101,52,.3);background:rgba(22,101,52,.08);}
+.tag-blue{color:var(--accent);border-color:rgba(124,74,30,.3);background:var(--accent-pale);}
+.tag-amber{color:#92400e;border-color:rgba(146,64,14,.3);background:rgba(146,64,14,.08);}
+.tag-purple{color:#6b21a8;border-color:rgba(107,33,168,.3);background:rgba(107,33,168,.08);}
+.tag-red{color:#991b1b;border-color:rgba(153,27,27,.3);background:rgba(153,27,27,.08);}
+.tag-teal{color:#0f766e;border-color:rgba(15,118,110,.3);background:rgba(15,118,110,.08);}
 
-  .label{
-    font-family:'Fredoka', sans-serif;
-    font-weight:600;
-    font-size:18px;
-    color:#fff;
-    letter-spacing:.2px;
-  }
+/* main blurb card */
+.blurb-card{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 2px 10px rgba(124,74,30,0.05);flex:1;min-height:0;overflow-y:auto;}
 
-  .icon-circle{
-    flex-shrink:0;
-    width:52px;
-    height:52px;
-    border-radius:50%;
-    background:rgba(255,255,255,.22);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    backdrop-filter: blur(2px);
-  }
-  .icon-circle svg{ width:26px; height:26px; }
+.section{display:flex;flex-direction:column;gap:6px;}
+.section-label{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:700;direction:rtl;text-align:right;}
+.section-text{font-size:20px;color:var(--text);line-height:1.75;direction:rtl;text-align:right;}
+.chip-list{display:flex;flex-wrap:wrap;gap:7px;direction:rtl;align-content:flex-start;}
+.chip{background:var(--surface2);border:1px solid var(--border2);border-radius:16px;padding:6px 14px;font-size:17px;color:var(--text);}
+.chip-accent{background:var(--accent-pale);border-color:rgba(124,74,30,.28);color:var(--accent);font-weight:500;}
+.divider{border:none;border-top:1px solid var(--border);margin:2px 0;}
 
-  /* platform colors */
-  .instagram{ background:linear-gradient(90deg, var(--ig-4), var(--ig-3) 35%, var(--ig-2) 65%, var(--ig-1)); }
-  .snapchat{ background:var(--snap); }
-  .snapchat .label{ color:var(--snap-ink); }
-  .snapchat .icon-circle{ background:rgba(0,0,0,.12); }
-  .whatsapp{ background:var(--wa); }
-  .youtube{ background:var(--yt); }
-  .facebook{ background:var(--fb); }
+/* ── CHAT ── */
+.chat-section{display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
+.chat-messages{display:flex;flex-direction:column;gap:8px;max-height:140px;overflow-y:auto;}
+.chat-bubble{padding:10px 14px;border-radius:12px;font-size:17px;line-height:1.6;direction:rtl;text-align:right;max-width:90%;align-self:flex-start;}
+.chat-bubble.user{background:var(--accent);color:#fff;align-self:flex-end;direction:rtl;}
+.chat-bubble.ai{background:var(--surface2);color:var(--text);border:1px solid var(--border2);}
+.chat-bubble.thinking{color:var(--muted);font-style:italic;}
+.chat-input-row{display:flex;gap:8px;}
+.chat-input{flex:1;background:var(--surface);border:1.5px solid var(--border2);border-radius:10px;padding:11px 14px;color:var(--text);font-size:17px;outline:none;transition:border-color .2s;font-family:var(--font-b);direction:rtl;}
+.chat-input:focus{border-color:var(--accent);}
+.chat-send{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-family:var(--font-d);font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap;transition:opacity .15s;}
+.chat-send:hover{opacity:.88;}
+.chat-send:disabled{opacity:.45;cursor:not-allowed;}
 
-  footer{
-    text-align:center;
-    margin-top:40px;
-    padding-bottom:20px;
-    color:var(--ink-dim);
-    font-size:12px;
-    letter-spacing:.3px;
-  }
+.voice-btn{background:transparent;border:1.5px solid var(--border2);border-radius:10px;padding:11px 14px;font-size:18px;cursor:pointer;transition:all .2s;flex-shrink:0;}
+.voice-btn:hover{border-color:var(--accent);background:var(--accent-pale);}
+.voice-btn.listening{background:#c0392b;border-color:#c0392b;animation:pulse-red 1s ease-in-out infinite;}
+@keyframes pulse-red{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,0.4)}50%{box-shadow:0 0 0 8px rgba(192,57,43,0)}}
 
-  .horizon{
-    position:fixed;
-    bottom:0;
-    left:0;
-    width:100%;
-    z-index:0;
-    opacity:.5;
-    pointer-events:none;
-  }
+/* skeleton */
+.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,#fdf8f2 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:5px;height:20px;margin-bottom:8px;}
+.skeleton:last-child{width:55%;margin-bottom:0;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-  @media (max-width:380px){
-    h1{ font-size:28px; }
-    .label{ font-size:16px; }
-    .link-bar{ padding-left:20px; }
-  }
+/* btn-primary */
+.btn-primary{background:var(--accent);color:#fff;border:none;border-radius:11px;padding:14px;font-family:var(--font-d);font-size:17px;font-weight:700;cursor:pointer;width:100%;box-shadow:0 4px 14px rgba(124,74,30,.25);transition:opacity .15s,transform .15s;}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── SCREENSAVER / PROMOTIONS ── */
+#screensaver{position:fixed;inset:0;z-index:200;background:#1e0e00;display:none;flex-direction:column;padding:28px 32px;gap:20px;cursor:pointer;}
+#screensaver.active{display:flex;}
+.ss-topbar{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.ss-logo-text{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#ffffff;}
+.ss-logo-text span{color:#d4a843;}
+.ss-close{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:7px 16px;color:#c8a070;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.ss-close:hover{background:rgba(255,255,255,0.14);color:#fff;}
+.ss-headline{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#d4a843;letter-spacing:.15em;text-transform:uppercase;flex-shrink:0;}
+.ss-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;flex:1;min-height:0;}
+.ss-card{background:#2e1a08;border:1px solid #a0622a;border-radius:16px;padding:18px 16px;display:flex;flex-direction:column;justify-content:space-between;gap:10px;}
+.ss-card-name{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:#ffffff;line-height:1.3;}
+.ss-card-bottom{display:flex;flex-direction:column;gap:6px;}
+.ss-card-old{font-size:14px;color:#8a7055;text-decoration:line-through;}
+.ss-card-new{font-size:26px;font-weight:800;color:#d4a843;font-family:'Syne',sans-serif;line-height:1;}
+.ss-card-badge{background:#d4a843;color:#1e0e00;font-size:11px;font-weight:800;padding:3px 10px;border-radius:6px;align-self:flex-start;}
+.ss-pagination{display:flex;align-items:center;justify-content:center;gap:8px;flex-shrink:0;}
+.ss-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.15);transition:all .3s;}
+.ss-dot.active{background:#d4a843;width:24px;border-radius:4px;}
+.ss-hint{text-align:center;font-size:13px;color:#c8a070;letter-spacing:.1em;flex-shrink:0;}
+
+/* ── ADMIN ── */
+#admin{position:fixed;inset:0;z-index:300;background:#f5efe6;display:none;flex-direction:column;padding:32px;gap:16px;overflow-y:auto;}
+#admin.active{display:flex;}
+.admin-header{display:flex;align-items:center;justify-content:space-between;}
+.admin-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#1e0e00;}
+.admin-close{background:transparent;border:1px solid var(--border2);border-radius:8px;padding:8px 16px;cursor:pointer;font-size:14px;color:var(--muted);font-family:'DM Sans',sans-serif;}
+.promo-list{display:flex;flex-direction:column;gap:10px;}
+.promo-item{background:#fff;border:1px solid var(--border2);border-radius:12px;padding:16px;display:flex;align-items:center;gap:16px;justify-content:space-between;}
+.promo-item-info{display:flex;flex-direction:column;gap:3px;}
+.promo-name{font-size:16px;font-weight:600;color:#1e0e00;}
+.promo-price{font-size:14px;color:var(--muted);}
+.promo-delete{background:rgba(192,57,43,.08);border:1px solid rgba(192,57,43,.25);border-radius:8px;padding:6px 14px;cursor:pointer;color:#c0392b;font-size:13px;font-family:'DM Sans',sans-serif;}
+.admin-form{background:#fff;border:1px solid var(--border2);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px;}
+.admin-form h3{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:#1e0e00;}
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.admin-input{background:var(--surface2);border:1px solid var(--border2);border-radius:9px;padding:11px 14px;color:#1e0e00;font-size:15px;outline:none;font-family:'DM Sans',sans-serif;transition:border-color .2s;}
+.admin-input:focus{border-color:var(--accent);}
+.admin-input::placeholder{color:var(--muted2);}
+.btn-add{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:12px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;}
+.admin-pw{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:16px;}
+.admin-pw input{background:var(--surface2);border:1px solid var(--border2);border-radius:9px;padding:12px 18px;font-size:16px;outline:none;width:280px;font-family:'DM Sans',sans-serif;}
+.admin-pw button{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:12px 32px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;}
 </style>
 </head>
 <body>
 
-  <div class="stars" id="stars"></div>
+<!-- SETUP -->
+<div id="setup">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+    <div class="logo-mark"><svg width="26" height="26" viewBox="0 0 34 34" fill="none"><rect x="2" y="6" width="3" height="22" rx="1" fill="white"/><rect x="7" y="6" width="1.5" height="22" fill="white"/><rect x="10" y="6" width="3" height="22" rx="1" fill="white"/><rect x="15" y="6" width="1.5" height="22" fill="white"/><rect x="18" y="6" width="4" height="22" rx="1" fill="white"/><rect x="24" y="6" width="1.5" height="22" fill="white"/><rect x="27" y="6" width="3" height="22" rx="1" fill="white"/></svg></div>
+    <div><div class="logo-name">Life Hyper<span>AI </span></div><div class="logo-ku">هاریکارێ زاخو بازار یێ ژیر</div></div>
+  </div>
+  <div class="setup-card">
+    <h2>Enter your API key to start</h2>
+    <p>Get a free Gemini key at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>. Saved on this device only.</p>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <label>Gemini API Key</label>
+      <input type="password" id="api-key-input" placeholder="AIza..." onkeydown="if(event.key==='Enter')saveKey()"/>
+    </div>
+    <button class="btn-primary" onclick="saveKey()">Start Kiosk →</button>
+  </div>
+  <p style="font-size:12px;color:var(--muted2);">Key stored locally — never shared.</p>
+</div>
 
-  <svg class="horizon" viewBox="0 0 500 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M0,80 C100,40 180,110 280,70 C360,40 420,90 500,60 L500,120 L0,120 Z" fill="#0a2247"/>
-  </svg>
+<!-- SCREENSAVER / PROMOTIONS -->
+<div id="screensaver" onclick="dismissScreensaver()">
+  <div class="ss-topbar">
+    <div class="ss-logo-text">MediMart <span>AI Helper</span></div>
+    <button class="ss-close" onclick="event.stopPropagation();dismissScreensaver()">✕ Back to Scanner</button>
+  </div>
+  <div class="ss-headline">🏷 Special Offers — عروضات خاصة</div>
+  <div class="ss-grid" id="ss-grid"></div>
+  <div class="ss-pagination" id="ss-pagination"></div>
+  <div class="ss-hint">TOUCH ANYWHERE OR SCAN A PRODUCT DIRECTLY</div>
+</div>
 
-  <div class="page">
-    <header>
-      <div class="badge" aria-hidden="true">
-        <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
-          <path d="M3 13c3-6 6-9 9-9s6 3 9 9-6 9-9 9-9-3-9-9Z" stroke="#fff" stroke-width="1.6"/>
-          <circle cx="12" cy="13" r="3" fill="#fff"/>
-        </svg>
+<!-- ADMIN PANEL -->
+<div id="admin">
+  <div id="admin-pw-screen" class="admin-pw">
+    <h2 style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;">Admin Access</h2>
+    <input type="password" id="admin-pw-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkAdminPw()"/>
+    <button onclick="checkAdminPw()">Enter →</button>
+    <button onclick="closeAdmin()" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:14px;">Cancel</button>
+  </div>
+  <div id="admin-main" style="display:none;flex-direction:column;gap:16px;">
+    <div class="admin-header">
+      <div class="admin-title">⚙ Promotions Manager</div>
+      <button class="admin-close" onclick="closeAdmin()">✕ Close</button>
+    </div>
+    <div class="admin-form">
+      <h3>Add a promotion</h3>
+      <div class="admin-input" style="background:#e8f0ff;padding:8px 14px;font-size:13px;color:#3a4e70;border-radius:8px;">Enter product name and prices below. It will appear on the screensaver.</div>
+      <input class="admin-input" id="promo-name" placeholder="Product name (e.g. Pepsi 1.5L)"/>
+      <div class="form-row">
+        <input class="admin-input" id="promo-old" placeholder="Old price (e.g. 2500)"/>
+        <input class="admin-input" id="promo-new" placeholder="Sale price (e.g. 1750)"/>
+        <input class="admin-input" id="promo-currency" placeholder="Currency (e.g. IQD)"/>
+        <input class="admin-input" id="promo-image" placeholder="Image URL (optional)"/>
       </div>
-      <h1>future <span>island</span></h1>
-      <p class="tagline">find us everywhere ✦ pick a link below</p>
-    </header>
+      <button class="btn-add" onclick="addPromo()">Add to screensaver →</button>
+    </div>
+    <div class="promo-list" id="promo-list"></div>
+  </div>
+</div>
 
-    <main>
-      <a class="link-bar instagram" id="link-instagram" href="#" target="_blank" rel="noopener">
-        <span class="label">Instagram</span>
-        <span class="icon-circle">
-          <svg viewBox="0 0 24 24" fill="none">
-            <rect x="3" y="3" width="18" height="18" rx="5" stroke="#fff" stroke-width="1.8"/>
-            <circle cx="12" cy="12" r="4" stroke="#fff" stroke-width="1.8"/>
-            <circle cx="17.2" cy="6.8" r="1.1" fill="#fff"/>
-          </svg>
-        </span>
-      </a>
-
-      <a class="link-bar snapchat" id="link-snapchat" href="#" target="_blank" rel="noopener">
-        <span class="label">Snapchat</span>
-        <span class="icon-circle">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M12 3c2.8 0 4.6 2.1 4.5 4.8l-.1 2.1c1 .5 1.6.4 2 .3.3-.1.7 0 .8.4.1.4-.1.7-.4.9-.5.3-1.2.6-2 .8.1.6.6 1.4 1.8 2 .3.1.4.5.2.8-.4.6-1.5.9-2.6 1-.1.3-.2.7-.4 1-.2.3-.6.3-1 .2-.5-.1-1-.2-1.7-.1-.6.1-1.1.4-1.7.7-.5.2-1 .4-1.4.4s-.9-.2-1.4-.4c-.6-.3-1.1-.6-1.7-.7-.7-.1-1.2 0-1.7.1-.4.1-.8.1-1-.2-.2-.3-.3-.7-.4-1-1.1-.1-2.2-.4-2.6-1-.2-.3-.1-.7.2-.8 1.2-.6 1.7-1.4 1.8-2-.8-.2-1.5-.5-2-.8-.3-.2-.5-.5-.4-.9.1-.4.5-.5.8-.4.4.1 1 .2 2-.3l-.1-2.1C7.4 5.1 9.2 3 12 3Z" stroke="#1a1a1a" stroke-width="1.4" stroke-linejoin="round"/>
-          </svg>
-        </span>
-      </a>
-
-      <a class="link-bar whatsapp" id="link-whatsapp" href="#" target="_blank" rel="noopener">
-        <span class="label">WhatsApp</span>
-        <span class="icon-circle">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M6.5 17.5 4 20l2.6-.7c1.6.9 3.4 1.2 5.1.9 4.2-.7 7.1-4.6 6.5-8.8-.7-4.2-4.6-7.1-8.8-6.5C5.2 5.6 2.3 9.5 3 13.7c.2 1.4.8 2.7 1.7 3.7Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
-            <path d="M9.2 9.6c.2-.5.5-.5.7-.5h.5c.2 0 .4 0 .5.4.2.5.6 1.6.6 1.7.1.1.1.3 0 .4-.1.2-.2.3-.3.4-.1.1-.3.3-.4.4-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.5 1.5.3.1.5.1.6-.1.2-.2.7-.8.9-1.1.2-.2.4-.2.6-.1l1.5.7c.2.1.4.2.4.3.1.2.1 1-.3 1.5-.4.6-1.6 1-2.3 1-.6 0-2.5-.3-4.2-1.8-1.6-1.4-2.7-3.1-2.9-3.4-.2-.3-1-1.3-1-2.5 0-1.2.6-1.8.8-2Z" fill="#fff"/>
-          </svg>
-        </span>
-      </a>
-
-      <a class="link-bar youtube" id="link-youtube" href="#" target="_blank" rel="noopener">
-        <span class="label">YouTube</span>
-        <span class="icon-circle">
-          <svg viewBox="0 0 24 24" fill="none">
-            <rect x="2.5" y="6" width="19" height="12" rx="4" stroke="#fff" stroke-width="1.7"/>
-            <path d="M10.5 9.5v5l4.3-2.5-4.3-2.5Z" fill="#fff"/>
-          </svg>
-        </span>
-      </a>
-
-      <a class="link-bar facebook" id="link-facebook" href="#" target="_blank" rel="noopener">
-        <span class="label">Facebook</span>
-        <span class="icon-circle">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M14 21v-7h2.4l.4-3H14V8.9c0-.9.2-1.5 1.5-1.5H17V4.8c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H8.5v3H10.8v7h3.2Z" fill="#fff"/>
-          </svg>
-        </span>
-      </a>
-    </main>
-
-    <footer>
-      future island &middot; est. for the next generation
-    </footer>
+<!-- KIOSK -->
+<div class="page">
+  <div class="top-bar">
+    <div class="logo">
+      <div class="logo-mark"><svg width="26" height="26" viewBox="0 0 34 34" fill="none"><rect x="2" y="6" width="3" height="22" rx="1" fill="white"/><rect x="7" y="6" width="1.5" height="22" fill="white"/><rect x="10" y="6" width="3" height="22" rx="1" fill="white"/><rect x="15" y="6" width="1.5" height="22" fill="white"/><rect x="18" y="6" width="4" height="22" rx="1" fill="white"/><rect x="24" y="6" width="1.5" height="22" fill="white"/><rect x="27" y="6" width="3" height="22" rx="1" fill="white"/></svg></div>
+      <div class="logo-text-wrap">
+        <div class="logo-name">shopper <span>AI Helper</span></div>
+        <div class="logo-ku">هاریکارێ تە یێ ژیر</div>
+      </div>
+    </div>
+    <div class="top-right">
+      <div class="store-badge">ژیریا دەستکرد یا مێدیمارت</div>
+      <button class="key-btn" onclick="changeKey()">⚙ API Key</button>
+      <button class="key-btn" onclick="openAdmin()">🏷 داشکاندن</button>
+      <button class="key-btn" onclick="openPromotions()" style="color:var(--accent);border-color:var(--accent);font-weight:600;">🏷 Offers</button>
+    </div>
   </div>
 
-  <script>
-    // ============================================
-    //  EDIT YOUR LINKS HERE — the only place you need to touch
-    // ============================================
-    const LINKS = {
-      instagram: "",   // e.g. "https://instagram.com/futureisland"
-      snapchat:  "",   // e.g. "https://snapchat.com/add/futureisland"
-      whatsapp:  "",   // e.g. "https://wa.me/15551234567"
-      youtube:   "",   // e.g. "https://youtube.com/@futureisland"
-      facebook:  ""    // e.g. "https://facebook.com/futureisland"
-    };
-    // ============================================
+  <div class="main">
+    <!-- LEFT -->
+    <div class="left">
+      <div class="scan-zone" id="scan-zone">
+        <div class="scan-idle" id="scan-idle">
+          <div class="scan-idle-icon">
+            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+              <rect x="4" y="10" width="4" height="28" rx="1.5" fill="#7c4a1e"/>
+              <rect x="10" y="10" width="2" height="28" fill="#7c4a1e"/>
+              <rect x="14" y="10" width="4" height="28" rx="1.5" fill="#7c4a1e"/>
+              <rect x="20" y="10" width="2" height="28" fill="#7c4a1e"/>
+              <rect x="24" y="10" width="5" height="28" rx="1.5" fill="#7c4a1e"/>
+              <rect x="31" y="10" width="2" height="28" fill="#7c4a1e"/>
+              <rect x="35" y="10" width="4" height="28" rx="1.5" fill="#7c4a1e"/>
+            </svg>
+          </div>
+          <h2>تشتەکێ سکان بکە</h2>
+          <p>Scanner is ready — scan any item anytime</p>
+        </div>
 
-    Object.entries(LINKS).forEach(([key, url]) => {
-      const el = document.getElementById('link-' + key);
-      if (el && url) el.href = url;
-    });
+        <div class="manual-wrap">
+          <input type="text" id="manual-barcode" placeholder="Or enter barcode manually..." onkeydown="if(event.key==='Enter')lookupManual()"/>
+          <button class="btn-go" onclick="lookupManual()">Go →</button>
+        </div>
+      </div>
 
-    // ambient stars
-    const starsContainer = document.getElementById('stars');
-    const STAR_COUNT = 28;
-    for (let i = 0; i < STAR_COUNT; i++) {
-      const s = document.createElement('span');
-      const size = Math.random() * 2.5 + 1;
-      s.style.width = size + 'px';
-      s.style.height = size + 'px';
-      s.style.left = Math.random() * 100 + '%';
-      s.style.top = Math.random() * 70 + '%';
-      s.style.animationDelay = (Math.random() * 3.5) + 's';
-      starsContainer.appendChild(s);
+      <div class="status-bar" id="status-bar"></div>
+
+      <div class="product-card" id="product-card">
+        <div class="product-header">
+          <div class="product-thumb" id="product-thumb">
+            <svg width="28" height="28" viewBox="0 0 44 44" fill="none" style="opacity:.2"><rect x="6" y="10" width="4" height="24" rx="1" fill="currentColor"/><rect x="12" y="10" width="2" height="24" fill="currentColor"/><rect x="16" y="10" width="4" height="24" rx="1" fill="currentColor"/><rect x="22" y="10" width="2" height="24" fill="currentColor"/><rect x="26" y="10" width="5" height="24" rx="1" fill="currentColor"/><rect x="33" y="10" width="2" height="24" fill="currentColor"/></svg>
+          </div>
+          <div>
+            <div class="product-name" id="product-name">—</div>
+            <div class="product-sub" id="product-sub"></div>
+            <div class="badge-row" id="badge-row"></div>
+          </div>
+        </div>
+        <button class="scan-again-btn" onclick="resetAll()">↩ Ready for next item</button>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right" id="right">
+      <div class="tags-card">
+        <div class="tags-label">Product Tags</div>
+        <div class="tags-row" id="tags-row">
+          <div class="skeleton" style="width:70px;height:26px;border-radius:20px;display:inline-block;"></div>
+          <div class="skeleton" style="width:90px;height:26px;border-radius:20px;display:inline-block;margin-left:7px;"></div>
+        </div>
+      </div>
+
+      <div class="blurb-card" id="blurb-card">
+        <div class="skeleton"></div><div class="skeleton" style="width:80%"></div><div class="skeleton" style="width:60%"></div>
+      </div>
+
+      <div class="chat-section" id="chat-section" style="display:none;">
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-input-row">
+          <input class="chat-input" id="chat-input" placeholder="...پرسیارێک بپرسە / اسأل بالعربي" onkeydown="if(event.key==='Enter')sendChat()"/>
+          <button class="voice-btn" id="voice-btn" onclick="toggleVoice()" title="Speak in Arabic">🎤</button>
+          <button class="chat-send" id="chat-send" onclick="sendChat()">بپرسە ↑</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let apiKey = '';
+let currentProduct = null;
+let chatHistory = [];
+
+window.onload = () => {
+  const saved = localStorage.getItem('scanai_key');
+  if (saved) { apiKey = saved; document.getElementById('setup').classList.add('hidden'); }
+};
+
+function saveKey() {
+  const val = document.getElementById('api-key-input').value.trim();
+  if (!val || val.length < 10) { alert('Please enter your Gemini API key.'); return; }
+  apiKey = val;
+  localStorage.setItem('scanai_key', val);
+  document.getElementById('setup').classList.add('hidden');
+}
+
+function changeKey() {
+  apiKey = '';
+  localStorage.removeItem('scanai_key');
+  document.getElementById('setup').classList.remove('hidden');
+  resetAll();
+}
+
+/* ── PERMA-ACTIVE HARDWARE BARCODE SCANNER LISTENER ── */
+let barcodeBuffer = '';
+let barcodeTimeout = null;
+
+window.addEventListener('keydown', (e) => {
+  const activeEl = document.activeElement;
+  const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+
+  // Allow admin and chat fields normal interaction unless it's a barcode scanner firing
+  if (isInput && activeEl.id.startsWith('admin-')) return;
+  if (isInput && activeEl.id === 'manual-barcode' && e.key === 'Enter') return;
+
+  if (document.getElementById('screensaver').classList.contains('active')) {
+    dismissScreensaver();
+  }
+
+  if (e.key === 'Enter') {
+    if (barcodeBuffer.length >= 3) {
+      e.preventDefault();
+      const code = barcodeBuffer;
+      barcodeBuffer = '';
+      if (isInput) activeEl.blur();
+      lookupBarcode(code);
     }
-  </script>
-</body>
-</html>
+  } else if (e.key.length === 1) {
+    barcodeBuffer += e.key;
+    clearTimeout(barcodeTimeout);
+    // Hardware scanners output characters < 40ms apart
+    barcodeTimeout = setTimeout(() => {
+      barcodeBuffer = '';
+    }, 150);
+  }
+});
+
+function lookupManual() {
+  const val = document.getElementById('manual-barcode').value.trim();
+  if (val) lookupBarcode(val);
+}
+
+function resetAll() {
+  currentProduct = null;
+  chatHistory = [];
+  document.getElementById('right').classList.remove('active');
+  document.getElementById('product-card').classList.remove('active');
+  document.getElementById('chat-section').style.display = 'none';
+  document.getElementById('chat-messages').innerHTML = '';
+  document.getElementById('chat-input').value = '';
+  document.getElementById('manual-barcode').value = '';
+  document.getElementById('product-thumb').innerHTML = '<svg width="28" height="28" viewBox="0 0 44 44" fill="none" style="opacity:.2"><rect x="6" y="10" width="4" height="24" rx="1" fill="currentColor"/></svg>';
+  setStatus('');
+}
+
+// ── CACHE ──
+const CACHE_KEY_PREFIX = 'zbazar_cache_';
+const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+
+function cacheGet(code) {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY_PREFIX + code);
+    if (!raw) return null;
+    const { timestamp, data } = JSON.parse(raw);
+    if (Date.now() - timestamp > CACHE_EXPIRY_MS) {
+      localStorage.removeItem(CACHE_KEY_PREFIX + code);
+      return null;
+    }
+    return data;
+  } catch(e) { return null; }
+}
+
+function cacheSet(code, data) {
+  try {
+    localStorage.setItem(CACHE_KEY_PREFIX + code, JSON.stringify({ timestamp: Date.now(), data }));
+  } catch(e) {}
+}
+
+async function lookupBarcode(code) {
+  resetAll();
+
+  // 1. Check local cache first
+  const cached = cacheGet(code);
+  if (cached) {
+    currentProduct = cached.product;
+    chatHistory = cached.chatHistory || [];
+    renderShell(cached.product);
+    renderBlurb(cached.ai);
+    document.getElementById('chat-section').style.display = 'flex';
+    document.getElementById('chat-section').style.flexDirection = 'column';
+    setStatus('✓ ' + code, 'success');
+    return;
+  }
+
+  setStatus('Looking up product: ' + code + '...', '');
+
+  let p = null;
+  try {
+    const r = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+    const d = await r.json();
+    if (d.status === 1) p = d.product;
+  } catch(e) {}
+
+  if (!p) {
+    try {
+      const r = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${code}`);
+      const d = await r.json();
+      if (d.items?.length) { 
+        const i = d.items[0]; 
+        p = { product_name: i.title, brands: i.brand, categories: i.category, image_front_url: i.images?.[0] }; 
+      }
+    } catch(e) {}
+  }
+
+  if (!p) p = { product_name: 'Unknown product', barcode: code, _unknown: true };
+
+  currentProduct = p;
+  setStatus('Generating AI insights...', '');
+  renderShell(p);
+  await generateAI(p, code);
+}
+
+function rende
